@@ -1,124 +1,157 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
-// ─── Hotspots — positions calibrated to the real car photo ──────────────────
-// x/y are % of the car image container (left→right, top→bottom)
+// ─────────────────────────────────────────────────────────────────────────────
+// Hotspot coordinates are % of the IMG element's rendered width/height,
+// measured against the actual physical car parts in car-showcase.png.
+//
+// Car anatomy reference (side-profile, car faces left):
+//   Front wing tip       ≈  x:10  y:52
+//   Front wheel center   ≈  x:20  y:64
+//   Halo / cockpit       ≈  x:40  y:33
+//   Sidepod inlet body   ≈  x:46  y:52
+//   Engine cover upper   ≈  x:66  y:42
+//   Rear wing plane      ≈  x:82  y:27
+// ─────────────────────────────────────────────────────────────────────────────
 const HOTSPOTS = [
   {
     id: "aero",
     label: "AERO",
-    x: 14,
-    y: 28,
-    side: "top-left" as const,
-    title: "Aerodynamics",
-    body: "Advanced aerodynamics engineered for maximum downforce and efficiency. The front wing and nose assembly shape airflow around the entire car, generating grip and reducing drag across every surface.",
+    // Front wing body — left third, mid-height
+    x: 11,
+    y: 52,
+    lineDir: "up" as const,
+    cardAlign: "left" as const,   // card left-aligns to avoid left-edge overflow
+    title: "Front Wing & Aerodynamics",
+    body: "Advanced aerodynamics for maximum downforce and efficiency. The front wing shapes airflow around the entire chassis, generating front-axle grip and managing the downstream wake.",
   },
   {
     id: "chassis",
     label: "CHASSIS",
+    // Halo top / cockpit opening
     x: 40,
-    y: 16,
-    side: "top-center" as const,
+    y: 33,
+    lineDir: "up" as const,
+    cardAlign: "center" as const,
     title: "Carbon Fibre Monocoque",
-    body: "Carbon fibre monocoque built for strength, lightness, and precision. The survival cell meets the FIA's most stringent structural requirements while keeping mass to an absolute minimum.",
+    body: "Carbon fibre monocoque built for strength, lightness, and precision. The survival cell meets the FIA's most stringent structural requirements while minimising mass at every gram.",
   },
   {
     id: "powerunit",
     label: "POWER UNIT",
-    x: 70,
-    y: 18,
-    side: "top-right" as const,
-    title: "Power Unit",
-    body: "High-performance hybrid power unit delivering exceptional efficiency. The 2026 regulations introduce a significant increase in electrical deployment — specifications subject to official FIA confirmation.",
+    // Engine cover — rear upper body
+    x: 66,
+    y: 42,
+    lineDir: "up" as const,
+    cardAlign: "center" as const,
+    title: "Hybrid Power Unit",
+    body: "High-performance hybrid power unit delivering exceptional efficiency. The 2026 regulations introduce a significant step-up in electrical deployment alongside the internal combustion unit.",
   },
   {
     id: "suspension",
     label: "SUSPENSION",
-    x: 18,
-    y: 76,
-    side: "bottom-left" as const,
-    title: "Suspension",
-    body: "Precision-tuned suspension geometry for superior control and stability. The front and rear setups are continuously optimised across circuits to manage tyre temperatures and mechanical balance.",
+    // Front wheel hub — lower left
+    x: 20,
+    y: 65,
+    lineDir: "down" as const,
+    cardAlign: "left" as const,
+    title: "Suspension Geometry",
+    body: "Precision-tuned suspension for superior control and stability. Setup is continuously optimised across circuits to manage tyre temperatures, load transfer, and mechanical balance.",
   },
   {
     id: "sidepods",
     label: "SIDE PODS",
-    x: 50,
-    y: 78,
-    side: "bottom-center" as const,
+    // Sidepod inlet / body panel
+    x: 47,
+    y: 53,
+    lineDir: "down" as const,
+    cardAlign: "center" as const,
     title: "Sidepod Airflow",
-    body: "Optimised airflow for better cooling and aerodynamic performance. The sidepod undercut channels air efficiently to the radiators while managing the downstream wake environment.",
+    body: "Optimised airflow for better cooling and aerodynamic performance. The undercut geometry channels air efficiently to the radiators while managing the downstream wake environment.",
   },
   {
     id: "rearwing",
     label: "REAR WING",
-    x: 80,
-    y: 76,
-    side: "bottom-right" as const,
+    // Rear wing main plane — far right, upper
+    x: 82,
+    y: 27,
+    lineDir: "up" as const,
+    cardAlign: "right" as const,   // card right-aligns to avoid right-edge overflow
     title: "Rear Wing",
-    body: "Designed for maximum downforce and reduced drag. Features the Drag Reduction System (DRS) for straight-line speed advantage, balanced against cornering stability demands.",
+    body: "Designed for maximum downforce and reduced drag. Includes the Drag Reduction System (DRS) for straight-line speed gain, balanced against the cornering stability demand.",
   },
 ] as const;
 
-const HIGHLIGHTS = [
-  { label: "Season", value: "2026", sub: "Formula 1® debut campaign" },
-  { label: "Constructor", value: "11th", sub: "Entry on the starting grid" },
-  { label: "Chassis", value: "CADILLAC01", sub: "First car under the F1 identity" },
-  { label: "Race Drivers", value: "Perez · Bottas", sub: "#11 and #77" },
-  { label: "Livery", value: "Black / White", sub: "Matte carbon with gold crest" },
-  { label: "Backed By", value: "TWG · GM", sub: "TWG Motorsports & General Motors" },
-] as const;
+type LineDir = "up" | "down";
+type CardAlign = "left" | "center" | "right";
 
-type HotspotSide = (typeof HOTSPOTS)[number]["side"];
+// Card + line measurements
+const LINE_H = 72; // px — connector line height
 
-// Floating card — direction relative to hotspot dot
-function cardPlacement(side: HotspotSide): React.CSSProperties {
-  switch (side) {
-    case "top-left":
-      return { bottom: "calc(100% + 14px)", left: 0 };
-    case "top-center":
-      return { bottom: "calc(100% + 14px)", left: "50%", transform: "translateX(-50%)" };
-    case "top-right":
-      return { bottom: "calc(100% + 14px)", right: 0 };
-    case "bottom-left":
-      return { top: "calc(100% + 14px)", left: 0 };
-    case "bottom-center":
-      return { top: "calc(100% + 14px)", left: "50%", transform: "translateX(-50%)" };
-    case "bottom-right":
-      return { top: "calc(100% + 14px)", right: 0 };
+function cardHorizontal(align: CardAlign): React.CSSProperties {
+  switch (align) {
+    case "left":   return { left: 0 };
+    case "right":  return { right: 0 };
+    case "center": return { left: "50%", transform: "translateX(-50%)" };
   }
 }
 
-// Line from dot — up or down
-function lineDirection(side: HotspotSide) {
-  return side.startsWith("top") ? "bottom" : "top";
+function cardVertical(dir: LineDir): React.CSSProperties {
+  return dir === "up"
+    ? { bottom: `calc(100% + ${LINE_H}px + 6px)` }
+    : { top: `calc(100% + ${LINE_H}px + 6px)` };
 }
 
+function lineStyle(dir: LineDir): React.CSSProperties {
+  const base: React.CSSProperties = {
+    position: "absolute",
+    left: "50%",
+    transform: "translateX(-50%)",
+    width: "1px",
+    height: `${LINE_H}px`,
+    pointerEvents: "none",
+  };
+  return dir === "up"
+    ? { ...base, bottom: "calc(50% + 6px)", background: "linear-gradient(to top, rgba(255,255,255,0.55), rgba(255,255,255,0.06))" }
+    : { ...base, top:  "calc(50% + 6px)", background: "linear-gradient(to bottom, rgba(255,255,255,0.55), rgba(255,255,255,0.06))" };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Data highlights
+// ─────────────────────────────────────────────────────────────────────────────
+const HIGHLIGHTS = [
+  { label: "Season",       value: "2026",           sub: "Formula 1® debut campaign" },
+  { label: "Constructor",  value: "11th",            sub: "Entry on the starting grid" },
+  { label: "Chassis",      value: "CADILLAC01",      sub: "First car under the F1 identity" },
+  { label: "Race Drivers", value: "Perez · Bottas",  sub: "#11 Sergio Perez · #77 Valtteri Bottas" },
+  { label: "Livery",       value: "Black / White",   sub: "Matte carbon with Cadillac gold crest" },
+  { label: "Backed By",    value: "TWG · GM",        sub: "TWG Motorsports & General Motors" },
+] as const;
+
+// ─────────────────────────────────────────────────────────────────────────────
 export default function CarShowcase() {
   const [activeId, setActiveId] = useState<string | null>(null);
-  const [carHovered, setCarHovered] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  const active = HOTSPOTS.find((h) => h.id === activeId);
 
   return (
-    <section
-      id="car"
-      className="relative bg-[#050505] text-white overflow-hidden"
-    >
-      {/* ── Top ambient glow ── */}
+    <section id="car" className="relative bg-[#050505] text-white overflow-hidden">
+
+      {/* ── Subtle top ambient spotlight ── */}
       <div
-        className="absolute top-0 left-1/2 -translate-x-1/2 w-[900px] h-[400px] opacity-20 pointer-events-none"
+        aria-hidden
+        className="absolute top-0 left-1/2 -translate-x-1/2 pointer-events-none"
         style={{
-          background:
-            "radial-gradient(ellipse at 50% 0%, rgba(255,255,255,0.12) 0%, transparent 70%)",
+          width: "1000px",
+          height: "440px",
+          background: "radial-gradient(ellipse at 50% 0%, rgba(255,255,255,0.055) 0%, transparent 68%)",
         }}
       />
 
-      {/* ── Section header ── */}
-      <div className="max-w-screen-xl mx-auto px-8 md:px-16 pt-24 md:pt-32 pb-10">
+      {/* ══════════════════════════════════════════
+          SECTION HEADER
+      ══════════════════════════════════════════ */}
+      <div className="max-w-screen-xl mx-auto px-8 md:px-16 pt-24 md:pt-32 pb-0">
         <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6">
           <div>
             <motion.p
@@ -126,7 +159,7 @@ export default function CarShowcase() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.6 }}
-              className="text-white/25 text-[10px] tracking-[0.55em] uppercase mb-3"
+              className="text-white/20 text-[10px] tracking-[0.55em] uppercase mb-3"
             >
               2026 Challenger · Interactive Showcase
             </motion.p>
@@ -134,309 +167,434 @@ export default function CarShowcase() {
               initial={{ opacity: 0, y: 18 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ duration: 0.7, delay: 0.08 }}
-              className="text-4xl md:text-[56px] font-bold tracking-tight leading-none"
+              transition={{ duration: 0.75, delay: 0.08 }}
+              className="font-bold tracking-tight leading-none"
+              style={{ fontSize: "clamp(36px, 5.5vw, 72px)" }}
             >
-              The Cadillac F1
-              <br />
-              <span className="text-white/30">Challenger.</span>
+              The Cadillac F1<br />
+              <span className="text-white/25">Challenger.</span>
             </motion.h2>
           </div>
           <motion.p
             initial={{ opacity: 0 }}
             whileInView={{ opacity: 1 }}
             viewport={{ once: true }}
-            transition={{ duration: 0.7, delay: 0.15 }}
-            className="text-white/35 text-sm leading-relaxed max-w-sm"
+            transition={{ duration: 0.7, delay: 0.18 }}
+            className="text-white/30 text-sm leading-relaxed max-w-xs"
           >
-            Hover the hotspots to explore the engineering. Every component,
+            Hover each hotspot to explore the engineering. Every component,
             every surface — built with intent.
           </motion.p>
         </div>
       </div>
 
-      {/* ── Car stage ── */}
-      <div className="relative max-w-screen-2xl mx-auto px-4 md:px-8">
+      {/* ══════════════════════════════════════════
+          CAR STAGE
+          Outer div: overflow-visible so cards can extend beyond image bounds.
+          paddingTop/Bottom create space for the cards + lines above/below the car.
+      ══════════════════════════════════════════ */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        whileInView={{ opacity: 1 }}
+        viewport={{ once: true }}
+        transition={{ duration: 1.0, ease: [0.16, 1, 0.3, 1] }}
+        className="relative"
+        style={{
+          paddingTop: "130px",    // card + line headroom above car
+          paddingBottom: "130px", // card + line headroom below car
+          overflow: "visible",
+        }}
+      >
+        {/* Image wrapper — relative so hotspots can be %-positioned over it */}
+        <div className="relative" style={{ overflow: "visible" }}>
 
-        {/* Outer car container — relative for hotspot positioning */}
-        <motion.div
-          ref={containerRef}
-          initial={{ opacity: 0, scale: 0.98 }}
-          whileInView={{ opacity: 1, scale: 1 }}
-          viewport={{ once: true }}
-          transition={{ duration: 1.1, ease: [0.16, 1, 0.3, 1] }}
-          className="relative select-none"
-          onMouseEnter={() => setCarHovered(true)}
-          onMouseLeave={() => {
-            setCarHovered(false);
-          }}
-        >
-          {/* Subtle studio floor glow — sits UNDER the car */}
-          <div
-            className="absolute bottom-[10%] left-1/2 -translate-x-1/2 w-[70%] h-20 pointer-events-none transition-opacity duration-700"
+          {/* ── Real car photograph ── */}
+          <img
+            src="/car-showcase.png"
+            alt="2026 Cadillac Formula 1 Car — official livery, side profile"
+            className="block w-full h-auto"
+            draggable={false}
             style={{
-              background:
-                "radial-gradient(ellipse at 50% 100%, rgba(255,255,255,0.07) 0%, transparent 70%)",
-              opacity: carHovered ? 1 : 0.4,
+              filter: "brightness(1.12) contrast(1.06) saturate(0.95)",
+              // image already has a near-black background — we blend edges
+              // using overlay gradient divs below (more browser-compatible
+              // than CSS mask-composite, which varies by browser)
             }}
           />
 
-          {/* Car image */}
-          <div className="relative">
-            {/* Hover glow ring */}
-            <div
-              className="absolute inset-0 rounded-xl pointer-events-none transition-opacity duration-500"
-              style={{
-                boxShadow: carHovered
-                  ? "0 0 120px 20px rgba(255,255,255,0.04), inset 0 0 60px 0px rgba(255,255,255,0.02)"
-                  : "none",
-              }}
-            />
+          {/* ── Edge-blending overlays — make the photo native to the page ── */}
+          {/* Left fade */}
+          <div
+            aria-hidden
+            className="absolute inset-y-0 left-0 pointer-events-none"
+            style={{
+              width: "12%",
+              background: "linear-gradient(to right, #050505 0%, rgba(5,5,5,0.7) 40%, transparent 100%)",
+              zIndex: 10,
+            }}
+          />
+          {/* Right fade */}
+          <div
+            aria-hidden
+            className="absolute inset-y-0 right-0 pointer-events-none"
+            style={{
+              width: "12%",
+              background: "linear-gradient(to left, #050505 0%, rgba(5,5,5,0.7) 40%, transparent 100%)",
+              zIndex: 10,
+            }}
+          />
+          {/* Top fade */}
+          <div
+            aria-hidden
+            className="absolute top-0 left-0 right-0 pointer-events-none"
+            style={{
+              height: "14%",
+              background: "linear-gradient(to bottom, #050505 0%, transparent 100%)",
+              zIndex: 10,
+            }}
+          />
+          {/* Bottom fade — gentle, preserves the baked-in floor reflection */}
+          <div
+            aria-hidden
+            className="absolute bottom-0 left-0 right-0 pointer-events-none"
+            style={{
+              height: "18%",
+              background: "linear-gradient(to top, #050505 0%, rgba(5,5,5,0.4) 50%, transparent 100%)",
+              zIndex: 10,
+            }}
+          />
+          {/* Corner vignettes for seamless corners */}
+          <div
+            aria-hidden
+            className="absolute inset-0 pointer-events-none"
+            style={{
+              background:
+                "radial-gradient(ellipse 100% 100% at 0% 0%, rgba(5,5,5,0.6) 0%, transparent 45%), " +
+                "radial-gradient(ellipse 100% 100% at 100% 0%, rgba(5,5,5,0.6) 0%, transparent 45%), " +
+                "radial-gradient(ellipse 100% 100% at 0% 100%, rgba(5,5,5,0.5) 0%, transparent 35%), " +
+                "radial-gradient(ellipse 100% 100% at 100% 100%, rgba(5,5,5,0.5) 0%, transparent 35%)",
+              zIndex: 11,
+            }}
+          />
 
-            <img
-              src="/car-showcase.png"
-              alt="2026 Cadillac Formula 1 Car — official livery"
-              className="w-full h-auto object-contain"
-              style={{
-                filter: carHovered
-                  ? "brightness(1.08) contrast(1.02)"
-                  : "brightness(1) contrast(1)",
-                transition: "filter 0.6s ease",
-              }}
-              draggable={false}
-            />
-
-            {/* ── Hotspot dots ── */}
+          {/* ── Hotspot layer — z above overlays ── */}
+          <div
+            className="absolute inset-0"
+            style={{ zIndex: 20, overflow: "visible" }}
+          >
             {HOTSPOTS.map((h) => {
               const isActive = activeId === h.id;
               const isDimmed = activeId !== null && !isActive;
 
               return (
-                <button
+                <div
                   key={h.id}
-                  className="absolute group"
+                  className="absolute"
                   style={{
                     left: `${h.x}%`,
                     top: `${h.y}%`,
                     transform: "translate(-50%, -50%)",
-                    zIndex: isActive ? 30 : 20,
+                    overflow: "visible",
+                    zIndex: isActive ? 40 : 20,
                   }}
-                  onMouseEnter={() => setActiveId(h.id)}
-                  onMouseLeave={() => setActiveId(null)}
-                  onClick={() => setActiveId(isActive ? null : h.id)}
-                  aria-label={h.label}
                 >
-                  {/* Connector line (top hotspots go up, bottom go down) */}
+                  {/* ── Connector line ── */}
                   <div
-                    className="absolute left-1/2 -translate-x-1/2 w-px pointer-events-none transition-all duration-300"
                     style={{
-                      [lineDirection(h.side)]: "100%",
-                      height: "28px",
-                      background: isActive
-                        ? "linear-gradient(to bottom, rgba(255,255,255,0.5), rgba(255,255,255,0.08))"
-                        : "linear-gradient(to bottom, rgba(255,255,255,0.15), rgba(255,255,255,0.03))",
+                      ...lineStyle(h.lineDir),
+                      opacity: isActive ? 1 : isDimmed ? 0.12 : 0.3,
+                      transition: "opacity 0.3s",
                     }}
                   />
 
-                  {/* Label above/below the line */}
-                  <div
-                    className="absolute left-1/2 -translate-x-1/2 whitespace-nowrap pointer-events-none transition-all duration-300"
+                  {/* ── Dot ── */}
+                  <button
+                    onMouseEnter={() => setActiveId(h.id)}
+                    onMouseLeave={() => setActiveId(null)}
+                    onClick={() => setActiveId(isActive ? null : h.id)}
+                    aria-label={h.label}
+                    className="relative flex items-center justify-center"
                     style={{
-                      [lineDirection(h.side) === "bottom" ? "top" : "bottom"]:
-                        "calc(100% + 34px)",
-                      opacity: isActive ? 1 : isDimmed ? 0.2 : 0.55,
+                      width: "28px",
+                      height: "28px",
+                      cursor: "pointer",
+                      background: "transparent",
+                      border: "none",
+                      padding: 0,
                     }}
                   >
-                    <span
-                      className="text-white font-medium tracking-[0.25em] uppercase"
-                      style={{ fontSize: "10px" }}
-                    >
-                      {h.label}
-                    </span>
-                  </div>
+                    {/* Outer pulse rings — hidden when active */}
+                    {!isActive && !isDimmed && (
+                      <>
+                        <span
+                          className="absolute rounded-full border border-white/25 animate-ping"
+                          style={{ inset: "-4px", animationDuration: "2.6s" }}
+                        />
+                        <span
+                          className="absolute rounded-full border border-white/10 animate-ping"
+                          style={{ inset: "-10px", animationDuration: "2.6s", animationDelay: "0.5s" }}
+                        />
+                      </>
+                    )}
 
-                  {/* Dot */}
-                  <div className="relative flex items-center justify-center">
-                    {/* Outer pulse ring */}
-                    <span
-                      className="absolute rounded-full border border-white/30 animate-ping"
-                      style={{
-                        width: "28px",
-                        height: "28px",
-                        animationDuration: "2.4s",
-                        opacity: isActive ? 0 : isDimmed ? 0 : 0.6,
-                      }}
-                    />
-                    {/* Secondary ring */}
-                    <span
-                      className="absolute rounded-full border border-white/15 animate-ping"
-                      style={{
-                        width: "42px",
-                        height: "42px",
-                        animationDuration: "2.4s",
-                        animationDelay: "0.4s",
-                        opacity: isActive ? 0 : isDimmed ? 0 : 0.3,
-                      }}
-                    />
                     {/* Core dot */}
                     <span
-                      className="relative flex items-center justify-center rounded-full border transition-all duration-300"
+                      className="relative rounded-full transition-all duration-300 flex items-center justify-center"
                       style={{
-                        width: isActive ? "22px" : "16px",
-                        height: isActive ? "22px" : "16px",
-                        background: isActive
-                          ? "rgba(255,255,255,1)"
-                          : "rgba(255,255,255,0.15)",
-                        borderColor: isActive
-                          ? "rgba(255,255,255,0.9)"
-                          : "rgba(255,255,255,0.4)",
-                        backdropFilter: "blur(4px)",
-                        opacity: isDimmed ? 0.2 : 1,
+                        width: isActive ? "20px" : "14px",
+                        height: isActive ? "20px" : "14px",
+                        background: isActive ? "#fff" : "rgba(255,255,255,0.18)",
+                        border: `1px solid ${isActive ? "rgba(255,255,255,0.9)" : "rgba(255,255,255,0.45)"}`,
                         boxShadow: isActive
-                          ? "0 0 20px 4px rgba(255,255,255,0.35), 0 0 40px 8px rgba(255,255,255,0.12)"
+                          ? "0 0 18px 5px rgba(255,255,255,0.3), 0 0 40px 10px rgba(255,255,255,0.1)"
                           : "none",
+                        opacity: isDimmed ? 0.18 : 1,
+                        backdropFilter: "blur(4px)",
                       }}
                     >
                       <span
-                        className="rounded-full transition-all duration-200"
+                        className="rounded-full"
                         style={{
-                          width: isActive ? "6px" : "5px",
-                          height: isActive ? "6px" : "5px",
-                          background: isActive ? "#000" : "rgba(255,255,255,0.9)",
+                          width: isActive ? "5px" : "4px",
+                          height: isActive ? "5px" : "4px",
+                          background: isActive ? "#000" : "rgba(255,255,255,0.85)",
+                          transition: "all 0.25s",
                         }}
                       />
                     </span>
-                  </div>
 
-                  {/* Floating info card */}
-                  <AnimatePresence>
-                    {isActive && (
-                      <motion.div
-                        initial={{ opacity: 0, scale: 0.92, y: h.side.startsWith("top") ? 8 : -8 }}
-                        animate={{ opacity: 1, scale: 1, y: 0 }}
-                        exit={{ opacity: 0, scale: 0.94, y: h.side.startsWith("top") ? 4 : -4 }}
-                        transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
-                        className="absolute pointer-events-none"
-                        style={{
-                          ...cardPlacement(h.side),
-                          width: "240px",
-                          zIndex: 40,
-                        }}
-                      >
-                        <div
-                          className="rounded-xl px-5 py-4 border"
+                    {/* ── Floating label (always faintly visible) ── */}
+                    <span
+                      className="absolute pointer-events-none whitespace-nowrap font-medium tracking-[0.22em] uppercase transition-all duration-300"
+                      style={{
+                        fontSize: "8.5px",
+                        color: isActive ? "rgba(255,255,255,0.9)" : "rgba(255,255,255,0.35)",
+                        ...(h.lineDir === "up"
+                          ? { bottom: `calc(100% + ${LINE_H}px + 16px)` }
+                          : { top:  `calc(100% + ${LINE_H}px + 16px)` }),
+                        ...(() => {
+                          switch (h.cardAlign) {
+                            case "left":   return { left: 0 };
+                            case "right":  return { right: 0 };
+                            default:       return { left: "50%", transform: "translateX(-50%)" };
+                          }
+                        })(),
+                      }}
+                    >
+                      {h.label}
+                    </span>
+
+                    {/* ── Floating detail card ── */}
+                    <AnimatePresence>
+                      {isActive && (
+                        <motion.div
+                          key={`card-${h.id}`}
+                          initial={{
+                            opacity: 0,
+                            scale: 0.93,
+                            y: h.lineDir === "up" ? 10 : -10,
+                          }}
+                          animate={{ opacity: 1, scale: 1, y: 0 }}
+                          exit={{ opacity: 0, scale: 0.95, y: h.lineDir === "up" ? 5 : -5 }}
+                          transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+                          className="absolute pointer-events-none"
                           style={{
-                            background: "rgba(10,10,10,0.92)",
-                            borderColor: "rgba(255,255,255,0.12)",
-                            backdropFilter: "blur(20px)",
-                            boxShadow:
-                              "0 24px 48px rgba(0,0,0,0.8), 0 0 0 0.5px rgba(255,255,255,0.06)",
+                            width: "220px",
+                            zIndex: 50,
+                            ...cardVertical(h.lineDir),
+                            ...cardHorizontal(h.cardAlign),
                           }}
                         >
-                          {/* Card header */}
-                          <div className="flex items-center gap-2 mb-3">
-                            <span
-                              className="w-1 h-3.5 rounded-full bg-white/60 flex-shrink-0"
-                            />
-                            <p className="text-white/30 text-[9px] tracking-[0.4em] uppercase">
-                              {h.label}
+                          <div
+                            style={{
+                              background: "rgba(8, 8, 8, 0.94)",
+                              border: "1px solid rgba(255,255,255,0.1)",
+                              borderRadius: "14px",
+                              padding: "18px 20px",
+                              backdropFilter: "blur(24px)",
+                              boxShadow:
+                                "0 28px 56px rgba(0,0,0,0.85), 0 0 0 0.5px rgba(255,255,255,0.05), inset 0 1px 0 rgba(255,255,255,0.06)",
+                            }}
+                          >
+                            {/* Card eyebrow */}
+                            <div className="flex items-center gap-2 mb-3">
+                              <span
+                                style={{
+                                  display: "inline-block",
+                                  width: "3px",
+                                  height: "12px",
+                                  background: "rgba(255,255,255,0.5)",
+                                  borderRadius: "999px",
+                                  flexShrink: 0,
+                                }}
+                              />
+                              <span
+                                className="text-white/30 uppercase tracking-[0.4em]"
+                                style={{ fontSize: "8px" }}
+                              >
+                                {h.label}
+                              </span>
+                            </div>
+                            {/* Card title */}
+                            <p
+                              className="text-white font-semibold mb-2 leading-snug tracking-tight"
+                              style={{ fontSize: "13px" }}
+                            >
+                              {h.title}
+                            </p>
+                            {/* Card body */}
+                            <p
+                              className="text-white/40 leading-relaxed"
+                              style={{ fontSize: "11px", lineHeight: 1.65 }}
+                            >
+                              {h.body}
                             </p>
                           </div>
-                          <p className="text-white font-semibold text-sm mb-2 leading-snug">
-                            {h.title}
-                          </p>
-                          <p className="text-white/45 text-[11px] leading-relaxed">
-                            {h.body}
-                          </p>
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </button>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </button>
+                </div>
               );
             })}
           </div>
-        </motion.div>
-      </div>
+        </div>
+      </motion.div>
 
-      {/* ── Data highlights grid ── */}
-      <div className="max-w-screen-xl mx-auto px-8 md:px-16 mt-16 pb-24 md:pb-32">
+      {/* ══════════════════════════════════════════
+          DATA PANEL + BRAND STORY
+      ══════════════════════════════════════════ */}
+      <div className="max-w-screen-xl mx-auto px-8 md:px-16 pb-28 md:pb-36">
 
-        {/* Section label */}
+        {/* Section rule + label */}
         <div className="flex items-center gap-4 mb-8">
-          <div className="w-6 h-px bg-white/20" />
-          <p className="text-white/25 text-[9px] tracking-[0.5em] uppercase">
-            Team Profile
+          <div className="w-8 h-px bg-white/10" />
+          <p
+            className="text-white/20 uppercase tracking-[0.5em]"
+            style={{ fontSize: "9px" }}
+          >
+            Team Profile · 2026
           </p>
         </div>
 
-        {/* Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-px bg-white/[0.05] rounded-2xl overflow-hidden">
+        {/* Highlight cards */}
+        <div
+          className="grid rounded-2xl overflow-hidden mb-20"
+          style={{
+            gridTemplateColumns: "repeat(2, 1fr)",
+            gap: "1px",
+            background: "rgba(255,255,255,0.05)",
+          }}
+        >
+          {/* on md+ use 3 columns via inline style so Tailwind doesn't need to know */}
+          <style>{`@media(min-width:768px){.showcase-grid{grid-template-columns:repeat(3,1fr)!important}}@media(min-width:1024px){.showcase-grid{grid-template-columns:repeat(6,1fr)!important}}`}</style>
           {HIGHLIGHTS.map((h, i) => (
             <motion.div
               key={h.label}
-              initial={{ opacity: 0, y: 12 }}
+              className="showcase-grid group relative bg-[#050505] px-5 py-7 overflow-hidden"
+              initial={{ opacity: 0, y: 10 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ duration: 0.55, delay: i * 0.06 }}
-              className="group relative bg-[#050505] px-5 py-7 overflow-hidden cursor-default"
+              transition={{ duration: 0.5, delay: i * 0.055 }}
             >
-              {/* Hover lift highlight */}
-              <div className="absolute inset-0 bg-white/[0.03] opacity-0 group-hover:opacity-100 transition-opacity duration-400 pointer-events-none" />
-              <div className="absolute bottom-0 left-0 right-0 h-px bg-white/[0.06] group-hover:bg-white/[0.12] transition-colors duration-400" />
+              {/* Hover lift surface */}
+              <div
+                className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
+                style={{ background: "rgba(255,255,255,0.025)" }}
+              />
+              {/* Animated bottom border on hover */}
+              <div
+                className="absolute bottom-0 left-0 right-0 h-px opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
+                style={{ background: "rgba(255,255,255,0.12)" }}
+              />
 
-              <p className="text-white/20 text-[8px] tracking-[0.45em] uppercase mb-3 relative z-10">
+              <p
+                className="text-white/18 uppercase mb-3 relative z-10"
+                style={{ fontSize: "8px", letterSpacing: "0.45em", color: "rgba(255,255,255,0.2)" }}
+              >
                 {h.label}
               </p>
-              <p className="text-white font-semibold text-base leading-tight mb-1.5 tracking-tight relative z-10">
+              <p
+                className="text-white font-semibold tracking-tight mb-1.5 relative z-10"
+                style={{ fontSize: "15px", lineHeight: 1.2 }}
+              >
                 {h.value}
               </p>
-              <p className="text-white/30 text-[10px] leading-snug relative z-10">
+              <p
+                className="text-white/25 leading-snug relative z-10"
+                style={{ fontSize: "10px", lineHeight: 1.5 }}
+              >
                 {h.sub}
               </p>
             </motion.div>
           ))}
         </div>
 
-        {/* ── Brand story ── */}
+        {/* Brand story */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          transition={{ duration: 0.8, delay: 0.1 }}
-          className="mt-20 grid md:grid-cols-2 gap-12 items-start border-t border-white/[0.06] pt-16"
+          transition={{ duration: 0.85 }}
+          className="grid md:grid-cols-2 gap-12 md:gap-20 items-start border-t pt-16"
+          style={{ borderColor: "rgba(255,255,255,0.06)" }}
         >
           <div>
-            <p className="text-white/20 text-[9px] tracking-[0.55em] uppercase mb-5">
+            <p
+              className="text-white/20 uppercase mb-5"
+              style={{ fontSize: "9px", letterSpacing: "0.55em" }}
+            >
               Built to Define the Future
             </p>
-            <h3 className="text-3xl md:text-[40px] font-bold leading-tight tracking-tight">
-              What started as an idea
-              <br />
-              <span className="text-white/30">
+            <h3
+              className="font-bold leading-tight tracking-tight"
+              style={{ fontSize: "clamp(28px, 4vw, 44px)" }}
+            >
+              What started as an idea<br />
+              <span className="text-white/28" style={{ color: "rgba(255,255,255,0.28)" }}>
                 that refused to stay quiet.
               </span>
             </h3>
           </div>
-          <div className="space-y-5 md:pt-14">
-            <p className="text-white/50 text-sm leading-[1.8]">
+          <div className="space-y-5 md:pt-12">
+            <p className="text-white/45 text-sm leading-[1.85]">
               From design to engineering to culture, this is a commitment to
               the highest level of sport. Two American originals — Cadillac and
               Formula 1 — driving forward together.
             </p>
-            <p className="text-white/25 text-sm leading-[1.8]">
+            <p
+              className="text-white/22 text-sm leading-[1.85]"
+              style={{ color: "rgba(255,255,255,0.22)" }}
+            >
               "History is written by those who know what it demands." The first
               Formula 1® team built from the ground up in over a decade is here.
             </p>
-            <div className="pt-2">
+            <div className="pt-2 flex gap-6">
               <a
                 href="https://careers.cadillacf1team.com"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-3 text-white/40 text-[10px] uppercase tracking-widest hover:text-white transition-colors duration-300 group"
+                className="inline-flex items-center gap-3 text-white/30 hover:text-white transition-colors duration-300 group"
+                style={{ fontSize: "10px", letterSpacing: "0.2em", textTransform: "uppercase" }}
               >
-                <span className="w-5 h-px bg-white/20 group-hover:w-8 group-hover:bg-white/60 transition-all duration-300" />
-                Disruptors and future thinkers wanted
+                <span
+                  className="h-px bg-white/20 group-hover:bg-white/60 group-hover:w-8 transition-all duration-300"
+                  style={{ width: "20px", display: "inline-block" }}
+                />
+                Future thinkers wanted
+              </a>
+              <a
+                href="https://shop.cadillacf1team.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-3 text-white/30 hover:text-white transition-colors duration-300 group"
+                style={{ fontSize: "10px", letterSpacing: "0.2em", textTransform: "uppercase" }}
+              >
+                <span
+                  className="h-px bg-white/20 group-hover:bg-white/60 group-hover:w-8 transition-all duration-300"
+                  style={{ width: "20px", display: "inline-block" }}
+                />
+                Shop the team store
               </a>
             </div>
           </div>
