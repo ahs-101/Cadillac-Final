@@ -357,6 +357,7 @@ export default function TeamStory() {
           <div style={{
             display: "flex", flexWrap: "wrap", justifyContent: "center",
             gap: "0 0.28em",
+            lineHeight: 1.15,
           }}>
             {LINE1.map((word, wi) => (
               <motion.span
@@ -372,10 +373,10 @@ export default function TeamStory() {
                 }}
                 style={{
                   display: "inline-block",
-                  fontSize: "clamp(40px, 6.5vw, 84px)",
+                  fontSize: "clamp(36px, 5.2vw, 72px)",
                   fontWeight: 800,
-                  letterSpacing: "-0.03em",
-                  lineHeight: 1.0,
+                  letterSpacing: "-0.01em",
+                  lineHeight: 1.15,
                   color: "#fff",
                 }}
               >
@@ -383,10 +384,11 @@ export default function TeamStory() {
               </motion.span>
             ))}
           </div>
-          {/* Line 2 — starts after line 1 */}
+          {/* Line 2 — offset below with generous breathing room */}
           <div style={{
             display: "flex", flexWrap: "wrap", justifyContent: "center",
-            gap: "0 0.28em", marginTop: "4px",
+            gap: "0 0.28em", marginTop: "18px",
+            lineHeight: 1.15,
           }}>
             {LINE2.map((word, wi) => (
               <motion.span
@@ -402,10 +404,10 @@ export default function TeamStory() {
                 }}
                 style={{
                   display: "inline-block",
-                  fontSize: "clamp(40px, 6.5vw, 84px)",
+                  fontSize: "clamp(36px, 5.2vw, 72px)",
                   fontWeight: 800,
-                  letterSpacing: "-0.03em",
-                  lineHeight: 1.0,
+                  letterSpacing: "-0.01em",
+                  lineHeight: 1.15,
                   color: "rgba(255,255,255,0.22)",
                 }}
               >
