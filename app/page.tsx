@@ -1,6 +1,7 @@
 import NavBar from "@/components/ui/NavBar";
 import Hero from "@/components/ui/Hero";
 import CarShowcase from "@/components/ui/CarShowcase";
+import TeamStory from "@/components/ui/TeamStory";
 import RaceCalendar from "@/components/ui/RaceCalendar";
 import Drivers from "@/components/ui/Drivers";
 import FanClub from "@/components/ui/FanClub";
@@ -18,16 +19,19 @@ export default function Home() {
       {/* 3. Car showcase with interactive hotspots */}
       <CarShowcase />
 
-      {/* 4. Race calendar + live countdown */}
+      {/* 4. Team storytelling — floating memory cards + cinematic word reveal */}
+      <TeamStory />
+
+      {/* 5. Race calendar + live countdown */}
       <RaceCalendar />
 
-      {/* 5. Drivers — race drivers + support programme */}
+      {/* 6. Drivers — race drivers + support programme */}
       <Drivers />
 
-      {/* 6. Newsletter + merch carousel + partners marquee + 2nd newsletter */}
+      {/* 7. Newsletter + merch carousel + partners marquee + 2nd newsletter */}
       <FanClub />
 
-      {/* 7. Footer with animated motto + socials */}
+      {/* 8. Footer with animated motto + socials */}
       <Footer />
     </main>
   );
