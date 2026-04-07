@@ -3,6 +3,8 @@
 import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 
+const EASE: [number, number, number, number] = [0.16, 1, 0.3, 1];
+
 // 2026 F1 Calendar — next upcoming race from today (Apr 6 2026)
 // Miami GP: May 8–10, 2026 (race: Sunday May 10, 2026 at 21:00 UTC)
 const NEXT_RACE = {
@@ -74,17 +76,18 @@ export default function RaceCalendar() {
             initial={{ opacity: 0, y: 10 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            transition={{ duration: 0.7 }}
+            transition={{ duration: 0.6, ease: EASE }}
             className="text-white/25 text-xs tracking-[0.5em] uppercase mb-4"
           >
             Round {NEXT_RACE.round} · {NEXT_RACE.country} {NEXT_RACE.flag}
           </motion.p>
           <motion.h2
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 24 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            transition={{ duration: 0.8, delay: 0.1 }}
-            className="text-4xl md:text-6xl font-bold tracking-tight leading-none mb-4"
+            transition={{ duration: 0.7, delay: 0.08, ease: EASE }}
+            className="font-bold tracking-tight leading-none mb-4"
+            style={{ fontSize: "clamp(32px,5vw,60px)" }}
           >
             {NEXT_RACE.shortName}
           </motion.h2>
@@ -92,7 +95,7 @@ export default function RaceCalendar() {
             initial={{ opacity: 0 }}
             whileInView={{ opacity: 1 }}
             viewport={{ once: true }}
-            transition={{ duration: 0.7, delay: 0.2 }}
+            transition={{ duration: 0.6, delay: 0.16, ease: EASE }}
             className="text-white/40 text-sm tracking-wide"
           >
             {NEXT_RACE.dates} · {NEXT_RACE.circuit}
@@ -105,7 +108,7 @@ export default function RaceCalendar() {
             initial={{ opacity: 0, x: -30 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
-            transition={{ duration: 0.9 }}
+            transition={{ duration: 0.8, ease: EASE }}
             className="relative"
           >
             {/* Premium circuit card */}
@@ -210,7 +213,7 @@ export default function RaceCalendar() {
             initial={{ opacity: 0, x: 30 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
-            transition={{ duration: 0.9, delay: 0.1 }}
+            transition={{ duration: 0.8, delay: 0.1, ease: EASE }}
           >
             {/* Countdown */}
             <p className="text-white/25 text-[10px] tracking-[0.5em] uppercase mb-8">

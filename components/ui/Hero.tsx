@@ -4,12 +4,13 @@ import React, { useEffect, useRef, useState, useCallback } from "react";
 
 // ─── Frame config ────────────────────────────────────────────────────────────
 const TOTAL_FRAMES = 240;
+const BASE = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
 
 function pad(n: number) {
   return String(n).padStart(3, "0");
 }
 function frameSrc(n: number) {
-  return `/hero-frames/ezgif-frame-${pad(n)}.jpg`;
+  return `${BASE}/hero-frames/ezgif-frame-${pad(n)}.jpg`;
 }
 
 // ─── Scroll-range → 0-1 mapper (clamped) ─────────────────────────────────────
