@@ -1,0 +1,13 @@
+1:"$Sreact.fragment"
+2:I[8510,["/Cadillac-Final/_next/static/chunks/0~nnuutx4x.6a.js","/Cadillac-Final/_next/static/chunks/13fov2m-huvla.js"],"default"]
+3:I[75810,["/Cadillac-Final/_next/static/chunks/0~nnuutx4x.6a.js","/Cadillac-Final/_next/static/chunks/13fov2m-huvla.js"],"default"]
+4:I[90080,["/Cadillac-Final/_next/static/chunks/0~nnuutx4x.6a.js","/Cadillac-Final/_next/static/chunks/13fov2m-huvla.js"],"default"]
+5:I[2648,["/Cadillac-Final/_next/static/chunks/0~nnuutx4x.6a.js","/Cadillac-Final/_next/static/chunks/13fov2m-huvla.js"],"default"]
+6:I[56977,["/Cadillac-Final/_next/static/chunks/0~nnuutx4x.6a.js","/Cadillac-Final/_next/static/chunks/13fov2m-huvla.js"],"default"]
+7:I[98267,["/Cadillac-Final/_next/static/chunks/0~nnuutx4x.6a.js","/Cadillac-Final/_next/static/chunks/13fov2m-huvla.js"],"default"]
+8:I[78646,["/Cadillac-Final/_next/static/chunks/0~nnuutx4x.6a.js","/Cadillac-Final/_next/static/chunks/13fov2m-huvla.js"],"default"]
+9:I[91028,["/Cadillac-Final/_next/static/chunks/0~nnuutx4x.6a.js","/Cadillac-Final/_next/static/chunks/13fov2m-huvla.js"],"default"]
+a:I[76037,["/Cadillac-Final/_next/static/chunks/0~nnuutx4x.6a.js"],"OutletBoundary"]
+b:"$Sreact.suspense"
+0:{"rsc":["$","$1","c",{"children":[["$","main",null,{"className":"bg-black","children":[["$","$L2",null,{}],["$","$L3",null,{}],["$","$L4",null,{}],["$","$L5",null,{}],["$","$L6",null,{}],["$","$L7",null,{}],["$","$L8",null,{}],["$","$L9",null,{}]]}],[["$","script","script-0",{"src":"/Cadillac-Final/_next/static/chunks/13fov2m-huvla.js","async":true}]],["$","$La",null,{"children":["$","$b",null,{"name":"Next.MetadataOutlet","children":"$@c"}]}]]}],"isPartial":false,"staleTime":300,"varyParams":null,"buildId":"zpHJQjYqg5Y3fLD53TH_D"}
+c:null
