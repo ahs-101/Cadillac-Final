@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 const isProd = process.env.NODE_ENV === "production";
-const basePath = isProd ? "/CadillacF1.official" : "";
+const basePath = isProd ? "/Cadillac-Final" : "";
 
 const nextConfig: NextConfig = {
   output: "export",          // static HTML — required for GitHub Pages
