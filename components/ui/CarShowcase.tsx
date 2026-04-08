@@ -3,6 +3,8 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
+const BASE = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
+
 // ─── Bronze palette ───────────────────────────────────────────────────────────
 // Cadillac champagne-bronze — warm metallic, never orange
 const B = {
@@ -186,7 +188,7 @@ export default function CarShowcase() {
         >
           {/* Car photo */}
           <img
-            src="/car-showcase2.png"
+            src={`${BASE}/car-showcase2.png`}
             alt="2026 Cadillac Formula 1 Challenger — official studio livery"
             draggable={false}
             style={{ display: "block", width: "100%", height: "auto", userSelect: "none",
