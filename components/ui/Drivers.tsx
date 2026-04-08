@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
+const BASE = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
 const EASE: [number, number, number, number] = [0.16, 1, 0.3, 1];
 
 const raceDrivers = [
@@ -18,8 +19,9 @@ const raceDrivers = [
     bio: "With multiple Grand Prix victories and a World Championship podium finish, Sergio Perez arrives at Cadillac F1 carrying the experience and precision that only the highest levels of the sport can forge.",
     stat1: { label: "Grands Prix", value: "281+" },
     stat2: { label: "Victories", value: "9" },
-    color: "from-zinc-900/80 to-zinc-950",
-    accentColor: "rgba(196,169,125,0.18)",
+    photo: "/drivers/perez.png",
+    // dark studio bg → photo bleeds to right
+    photoDark: true,
   },
   {
     id: "bottas",
@@ -33,8 +35,8 @@ const raceDrivers = [
     bio: "Valtteri Bottas brings a decade of elite Formula 1 experience to Cadillac — a driver defined by technical mastery, race intelligence, and an ability to extract maximum performance from every machine he commands.",
     stat1: { label: "Grands Prix", value: "250+" },
     stat2: { label: "Victories", value: "10" },
-    color: "from-neutral-900/80 to-neutral-950",
-    accentColor: "rgba(196,169,125,0.14)",
+    photo: "/drivers/bottas.png",
+    photoDark: true,
   },
 ];
 
@@ -51,8 +53,8 @@ const reserveDrivers = [
     bio: "Zhou Guanyu supports operations from the inside — analysing data, refining setups, and standing ready to deliver precision on demand.",
     stat1: { label: "F1 Seasons", value: "3" },
     stat2: { label: "Points Finishes", value: "12" },
-    color: "from-stone-900/80 to-stone-950",
-    accentColor: "rgba(196,169,125,0.10)",
+    photo: "/drivers/zhou.png",
+    photoDark: false,
   },
   {
     id: "herta",
@@ -66,8 +68,8 @@ const reserveDrivers = [
     bio: "One of America's most gifted young racing talents, Colton Herta brings IndyCar pedigree and exceptional instinct to the Cadillac F1 test programme.",
     stat1: { label: "IndyCar Wins", value: "7" },
     stat2: { label: "Pole Positions", value: "9" },
-    color: "from-zinc-900/80 to-zinc-950",
-    accentColor: "rgba(196,169,125,0.10)",
+    photo: "/drivers/herta.png",
+    photoDark: false,
   },
 ];
 
@@ -82,6 +84,9 @@ function DriverCard({
 }) {
   const [hovered, setHovered] = useState(false);
 
+  // Height of the photo banner area
+  const bannerH = large ? "clamp(260px,28vw,400px)" : "clamp(200px,20vw,300px)";
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 28 }}
@@ -90,57 +95,84 @@ function DriverCard({
       transition={{ duration: 0.7, delay, ease: EASE }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      className={`relative overflow-hidden rounded-2xl border border-white/[0.08] bg-gradient-to-b ${driver.color} group cursor-pointer flex flex-col h-full`}
+      className="relative overflow-hidden rounded-2xl border border-white/[0.08] bg-[#0a0a0a] group cursor-pointer flex flex-col h-full"
       style={{
         boxShadow: hovered
-          ? `0 0 60px ${driver.accentColor}, 0 2px 40px rgba(0,0,0,0.6)`
-          : "0 2px 40px rgba(0,0,0,0.4)",
+          ? "0 0 60px rgba(196,169,125,0.10), 0 2px 40px rgba(0,0,0,0.7)"
+          : "0 2px 40px rgba(0,0,0,0.5)",
         transition: "box-shadow 0.4s ease",
       }}
     >
-      {/* Portrait header — driver number as visual identity */}
+      {/* ── Photo banner with number watermark ── */}
       <div
-        className="relative w-full overflow-hidden flex items-center justify-center"
-        style={{
-          aspectRatio: large ? "16/9" : "2/1",
-          background: `radial-gradient(ellipse at 60% 40%, ${driver.accentColor} 0%, transparent 70%), #0a0a0a`,
-        }}
+        className="relative w-full overflow-hidden flex-shrink-0"
+        style={{ height: bannerH, background: driver.photoDark ? "#050505" : "#111" }}
       >
-        {/* Car number as hero typography */}
+        {/* Large number — absolute background watermark */}
         <span
-          className="text-white font-bold leading-none select-none"
+          aria-hidden="true"
+          className="absolute select-none pointer-events-none font-bold leading-none z-10"
           style={{
-            fontSize: large ? "clamp(80px,14vw,180px)" : "clamp(60px,10vw,130px)",
-            opacity: 0.07,
-            letterSpacing: "-0.04em",
+            // anchor bottom-right so number always peeks out from behind photo
+            bottom: "-0.08em",
+            right: "-0.02em",
+            fontSize: large ? "clamp(120px,18vw,240px)" : "clamp(90px,13vw,170px)",
+            letterSpacing: "-0.05em",
+            // subtle tint: bronze-ish
+            color: "rgba(210,185,145,0.13)",
           }}
         >
           {driver.number}
         </span>
-        {/* Subtle scan lines */}
+
+        {/* Driver photo — covers left 75%, fades right into number */}
         <div
-          className="absolute inset-0 pointer-events-none"
+          className="absolute inset-0 z-20"
           style={{
-            backgroundImage:
-              "repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255,255,255,0.012) 2px, rgba(255,255,255,0.012) 4px)",
+            // Mask the photo so it fades toward the right,
+            // letting the number watermark show through on the right side
+            WebkitMaskImage:
+              "linear-gradient(to right, black 55%, transparent 88%)",
+            maskImage:
+              "linear-gradient(to right, black 55%, transparent 88%)",
+          }}
+        >
+          <img
+            src={`${BASE}${driver.photo}`}
+            alt={driver.name}
+            className="w-full h-full object-cover object-top"
+            style={{
+              // scale up slightly on hover for a premium feel
+              transform: hovered ? "scale(1.03)" : "scale(1)",
+              transition: "transform 0.6s cubic-bezier(0.16,1,0.3,1)",
+            }}
+          />
+        </div>
+
+        {/* Bottom gradient — blends into card body */}
+        <div
+          className="absolute bottom-0 left-0 right-0 z-30 pointer-events-none"
+          style={{
+            height: "45%",
+            background: "linear-gradient(to top, #0a0a0a 0%, transparent 100%)",
           }}
         />
-        {/* Bottom fade into card body */}
-        <div className="absolute bottom-0 left-0 right-0 h-1/2 bg-gradient-to-t from-black/70 to-transparent" />
-        {/* Role pill */}
-        <div className="absolute top-4 left-4 flex items-center gap-2">
-          <span className="w-1 h-3.5 bg-white/35 rounded-full" />
-          <span className="text-white/35 text-[9px] tracking-[0.5em] uppercase">
+
+        {/* Role pill — top left */}
+        <div className="absolute top-4 left-4 z-40 flex items-center gap-2">
+          <span className="w-1 h-3.5 bg-white/30 rounded-full" />
+          <span className="text-white/30 text-[9px] tracking-[0.5em] uppercase">
             {driver.role}
           </span>
         </div>
-        {/* Number badge */}
-        <div className="absolute top-3 right-4 text-white/20 font-bold text-xs tracking-widest font-mono">
+
+        {/* Number badge top-right */}
+        <div className="absolute top-3.5 right-4 z-40 text-white/20 font-bold text-xs tracking-widest font-mono">
           #{driver.number}
         </div>
       </div>
 
-      {/* Card body */}
+      {/* ── Card body ── */}
       <div className={`relative z-10 flex flex-col flex-1 ${large ? "p-8 md:p-10" : "p-6 md:p-8"}`}>
         {/* Name & flag */}
         <div className="mb-3">
@@ -179,7 +211,6 @@ function DriverCard({
           )}
         </AnimatePresence>
 
-        {/* Spacer pushes stats + CTA to bottom */}
         <div className="flex-1" />
 
         {/* Stats */}
@@ -212,7 +243,7 @@ function DriverCard({
         >
           View Profile
           <span
-            className="transition-transform duration-300"
+            className="inline-block transition-transform duration-300"
             style={{ transform: hovered ? "translateX(4px)" : "translateX(0)" }}
           >
             →
